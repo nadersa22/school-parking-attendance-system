@@ -21,31 +21,45 @@ function AdminDashboard() {
   const [report, setReport] = useState<DailyReportResponse | null>(null);
   const [error, setError] = useState("");
 
-  const loadDashboard = async () => {
-    try {
-      const meResponse = await api.get<MeResponse>("/auth/me");
-
-      if (meResponse.data.role !== "ADMIN") {
-        navigate("/teacher");
-        return;
-      }
-
-      setUser(meResponse.data);
-
-      const reportResponse = await api.get<DailyReportResponse>("/reports/daily");
-      setReport(reportResponse.data);
-    } catch (err) {
-      console.error(err);
-      setError("You are not authorized. Please login again.");
-      localStorage.removeItem("token");
-      localStorage.removeItem("user");
-      navigate("/");
-    }
-  };
-
   useEffect(() => {
-    loadDashboard();
-  }, []);
+    let cancelled = false;
+
+    api
+      .get<MeResponse>("/auth/me")
+      .then((meResponse) => {
+        if (cancelled) {
+          return null;
+        }
+
+        if (meResponse.data.role !== "ADMIN") {
+          navigate("/teacher");
+          return null;
+        }
+
+        setUser(meResponse.data);
+
+        return api.get<DailyReportResponse>("/reports/daily");
+      })
+      .then((reportResponse) => {
+        if (!cancelled && reportResponse) {
+          setReport(reportResponse.data);
+        }
+      })
+      .catch((err) => {
+        console.error(err);
+
+        if (!cancelled) {
+          setError("You are not authorized. Please login again.");
+          localStorage.removeItem("token");
+          localStorage.removeItem("user");
+          navigate("/");
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [navigate]);
 
   return (
     <AdminLayout

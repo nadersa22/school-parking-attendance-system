@@ -20,18 +20,27 @@ function AdminAttendancePage() {
   const [attendance, setAttendance] = useState<AttendanceResponse[]>([]);
   const [message, setMessage] = useState("");
 
-  const loadAttendance = async () => {
-    try {
-      const response = await api.get<AttendanceResponse[]>("/attendance");
-      setAttendance(response.data);
-    } catch (err) {
-      console.error(err);
-      setMessage("Could not load attendance records.");
-    }
-  };
-
   useEffect(() => {
-    loadAttendance();
+    let cancelled = false;
+
+    api
+      .get<AttendanceResponse[]>("/attendance")
+      .then((response) => {
+        if (!cancelled) {
+          setAttendance(response.data);
+        }
+      })
+      .catch((error) => {
+        console.error(error);
+
+        if (!cancelled) {
+          setMessage("Could not load attendance records.");
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   const formatDateTime = (value: string | null) => {
@@ -94,14 +103,14 @@ function AdminAttendancePage() {
                         item.status === "VALID"
                           ? "#dcfce7"
                           : item.status === "INVALID"
-                          ? "#fee2e2"
-                          : "#dbeafe",
+                            ? "#fee2e2"
+                            : "#dbeafe",
                       color:
                         item.status === "VALID"
                           ? "#166534"
                           : item.status === "INVALID"
-                          ? "#991b1b"
-                          : "#1e40af",
+                            ? "#991b1b"
+                            : "#1e40af",
                     }}
                   >
                     {item.status}

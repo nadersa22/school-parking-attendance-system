@@ -9,27 +9,36 @@ function TeacherDashboard() {
   const [user, setUser] = useState<MeResponse | null>(null);
   const [message, setMessage] = useState("");
 
-  const loadTeacher = async () => {
-    try {
-      const response = await api.get<MeResponse>("/auth/me");
-
-      if (response.data.role !== "TEACHER") {
-        navigate("/admin");
-        return;
-      }
-
-      setUser(response.data);
-    } catch (err) {
-      console.error(err);
-      localStorage.removeItem("token");
-      localStorage.removeItem("user");
-      navigate("/");
-    }
-  };
-
   useEffect(() => {
-    loadTeacher();
-  }, []);
+    let cancelled = false;
+
+    api
+      .get<MeResponse>("/auth/me")
+      .then((response) => {
+        if (cancelled) {
+          return;
+        }
+
+        if (response.data.role !== "TEACHER") {
+          navigate("/admin");
+          return;
+        }
+
+        setUser(response.data);
+      })
+      .catch((err) => {
+        if (!cancelled) {
+          console.error(err);
+          localStorage.removeItem("token");
+          localStorage.removeItem("user");
+          navigate("/");
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [navigate]);
 
   const checkIn = async () => {
     try {
