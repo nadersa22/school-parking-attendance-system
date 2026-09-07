@@ -8,6 +8,7 @@ import com.school.parkingattendance.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import com.school.parkingattendance.entity.Role;
 
 @Service
 @RequiredArgsConstructor
@@ -27,7 +28,7 @@ public class AuthService {
                 .name(request.getName())
                 .email(request.getEmail())
                 .password(passwordEncoder.encode(request.getPassword()))
-                .role(request.getRole())
+                .role(Role.TEACHER)
                 .build();
 
         User savedUser = userRepository.save(user);
