@@ -4,6 +4,7 @@ import com.school.parkingattendance.security.JwtAuthFilter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
@@ -32,36 +33,74 @@ public class SecurityConfig {
         http
                 .csrf(csrf -> csrf.disable())
 
-                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
+                .cors(cors ->
+                        cors.configurationSource(corsConfigurationSource())
+                )
 
                 .sessionManagement(session ->
                         session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
                 )
 
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/api/auth/login").permitAll()
-                        .requestMatchers("/api/auth/register").permitAll()
-                        .requestMatchers("/api/test").permitAll()
+                        .requestMatchers(
+                                "/api/auth/login",
+                                "/api/auth/register",
+                                "/api/test"
+                        ).permitAll()
 
-                        .requestMatchers("/api/users/**").hasRole("ADMIN")
-                        .requestMatchers("/api/reports/**").hasRole("ADMIN")
+                        .requestMatchers(
+                                "/api/users/**",
+                                "/api/reports/**"
+                        ).hasRole("ADMIN")
 
-                        .requestMatchers("/api/parking-spots/**").hasAnyRole("ADMIN", "TEACHER")
-                        .requestMatchers("/api/reservations/**").hasAnyRole("ADMIN", "TEACHER")
-                        .requestMatchers("/api/attendance/**").hasAnyRole("ADMIN", "TEACHER")
-                        .requestMatchers("/api/auth/me").hasAnyRole("ADMIN", "TEACHER")
+                        .requestMatchers(
+                                HttpMethod.POST,
+                                "/api/parking-spots/**"
+                        ).hasRole("ADMIN")
+
+                        .requestMatchers(
+                                HttpMethod.PUT,
+                                "/api/parking-spots/**"
+                        ).hasRole("ADMIN")
+
+                        .requestMatchers(
+                                HttpMethod.DELETE,
+                                "/api/parking-spots/**"
+                        ).hasRole("ADMIN")
+
+                        .requestMatchers(
+                                HttpMethod.GET,
+                                "/api/attendance"
+                        ).hasRole("ADMIN")
+
+                        .requestMatchers(
+                                "/api/attendance/me",
+                                "/api/attendance/me/**",
+                                "/api/reservations/me",
+                                "/api/reservations/me/**"
+                        ).hasAnyRole("ADMIN", "TEACHER")
+
+                        .requestMatchers(
+                                HttpMethod.GET,
+                                "/api/parking-spots/**"
+                        ).hasAnyRole("ADMIN", "TEACHER")
+
+                        .requestMatchers("/api/auth/me")
+                        .hasAnyRole("ADMIN", "TEACHER")
 
                         .anyRequest().authenticated()
                 )
 
-                .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
+                .addFilterBefore(
+                        jwtAuthFilter,
+                        UsernamePasswordAuthenticationFilter.class
+                );
 
         return http.build();
     }
 
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
-
         CorsConfiguration configuration = new CorsConfiguration();
 
         configuration.setAllowedOrigins(List.of(
